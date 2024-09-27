@@ -11,36 +11,33 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          echo "Installing dependencies..."
           sudo apt-get update
           sudo apt-get install -y unzip wget
 
       - name: Install Vault CLI
         run: |
-          echo "Downloading and installing Vault..."
           wget https://releases.hashicorp.com/vault/1.11.5/vault_1.11.5_linux_amd64.zip
           unzip vault_1.11.5_linux_amd64.zip
           sudo mv vault /usr/local/bin/
-          chmod +x /usr/local/bin/vault  # Make sure it is executable
-          vault -v  # Verify installation
+          chmod +x /usr/local/bin/vault
+          vault -v
 
-      - name: Set Vault Address
-        run: echo "VAULT_ADDR=https://vault-cluster-public-vault-7f79ed77.cee56294.z1.hashicorp.cloud:8200" >> $GITHUB_ENV
+      - name: Set Vault Address and Namespace
+        run: |
+          echo "VAULT_ADDR=https://vault-cluster-public-vault-7f79ed77.cee56294.z1.hashicorp.cloud:8200" >> $GITHUB_ENV
+          echo "VAULT_NAMESPACE=admin" >> $GITHUB_ENV
 
       - name: Fetch RSA Key from Vault
         env:
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}  # Ensure your token is set in GitHub Secrets
-          VAULT_ADDR: ${{ env.VAULT_ADDR }}  # Use the Vault address set in the previous step
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          VAULT_ADDR: ${{ env.VAULT_ADDR }}
+          VAULT_NAMESPACE: ${{ env.VAULT_NAMESPACE }}
         run: |
-          echo "Fetching RSA Key from Vault..."
           rsa_key=$(vault kv get -field=private_key secrets/rsa_keys)
-          echo "RSA Key fetched successfully."  # Avoid printing sensitive data in production
           echo "$rsa_key" > private_key.pem
-          echo "Private key saved to private_key.pem."
-
+          
       - name: Validate RSA Key Format
         run: |
-          echo "Validating RSA Key format..."
           if openssl rsa -check -in private_key.pem; then
             echo "RSA Key format is valid."
           else
