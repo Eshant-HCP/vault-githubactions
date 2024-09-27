@@ -24,9 +24,13 @@ jobs:
           chmod +x /usr/local/bin/vault  # Make sure it is executable
           vault -v  # Verify installation
 
+      - name: Set Vault Address
+        run: echo "VAULT_ADDR=https://vault-cluster-public-vault-7f79ed77.cee56294.z1.hashicorp.cloud:8200" >> $GITHUB_ENV
+
       - name: Fetch RSA Key from Vault
         env:
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}  # Ensure your token is set in GitHub Secrets
+          VAULT_ADDR: ${{ env.VAULT_ADDR }}  # Use the Vault address set in the previous step
         run: |
           echo "Fetching RSA Key from Vault..."
           rsa_key=$(vault kv get -field=private_key secrets/rsa_keys)
