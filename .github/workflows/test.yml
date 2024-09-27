@@ -9,15 +9,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install Dependencies
+        run: |
+          echo "Installing dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+
+      - name: Install Vault CLI
+        run: |
+          echo "Downloading and installing Vault..."
+          wget https://releases.hashicorp.com/vault/1.11.5/vault_1.11.5_linux_amd64.zip
+          unzip vault_1.11.5_linux_amd64.zip
+          sudo mv vault /usr/local/bin/
+          chmod +x /usr/local/bin/vault  # Make sure it is executable
+          vault -v  # Verify installation
+
       - name: Fetch RSA Key from Vault
         env:
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}  # Ensure you have set this in GitHub secrets
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}  # Ensure your token is set in GitHub Secrets
         run: |
           echo "Fetching RSA Key from Vault..."
           rsa_key=$(vault kv get -field=private_key secrets/rsa_keys)
           echo "RSA Key fetched successfully."  # Avoid printing sensitive data in production
-
-          # Optionally save the key to a file for later use
           echo "$rsa_key" > private_key.pem
           echo "Private key saved to private_key.pem."
 
@@ -30,10 +43,3 @@ jobs:
             echo "RSA Key format is invalid!" >&2
             exit 1
           fi
-
-      - name: Use RSA Key (Example)
-        run: |
-          echo "Using the RSA Key..."
-          # Here, you can add any command that utilizes the RSA key.
-          # For example, sign a message or verify a signature.
-
