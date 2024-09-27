@@ -1,9 +1,9 @@
-name: Test Vault RSA Key
+name: Fetch and Convert PEM Key
 
 on: [push]
 
 jobs:
-  test-vault-key:
+  fetch-pem-key:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,20 +27,18 @@ jobs:
           echo "VAULT_ADDR=https://vault-cluster-public-vault-7f79ed77.cee56294.z1.hashicorp.cloud:8200" >> $GITHUB_ENV
           echo "VAULT_NAMESPACE=admin" >> $GITHUB_ENV
 
-      - name: Fetch RSA Key from Vault
+      - name: Fetch and Convert PEM Key to .env Format
         env:
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
           VAULT_ADDR: ${{ env.VAULT_ADDR }}
           VAULT_NAMESPACE: ${{ env.VAULT_NAMESPACE }}
         run: |
-          rsa_key=$(vault kv get -field=private_key secrets/rsa_keys)
-          echo "$rsa_key" > private_key.pem
+          # Fetch the private key from Vault
+          pem_key=$(vault kv get -field=private_key secrets/rsa_keys)
           
-      - name: Validate RSA Key Format
-        run: |
-          if openssl rsa -check -in private_key.pem; then
-            echo "RSA Key format is valid."
-          else
-            echo "RSA Key format is invalid!" >&2
-            exit 1
-          fi
+          # Convert the PEM key to .env format (single line)
+          pem_key_env=$(echo "$pem_key" | awk 'NF {sub(/\r/, ""); printf "%s\\n", $0}' | sed 's/$/\\n/;s/^/"/;s/$/"/')
+          
+          # Save to .env file
+          echo "PEM_KEY=$pem_key_env" > .env
+          echo ".env file created with PEM_KEY."
